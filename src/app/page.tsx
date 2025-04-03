@@ -204,6 +204,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
   const [currentlyViewingDomain, setCurrentlyViewingDomain] = useState<number | null>(null);
+  const [showDomainSelector, setShowDomainSelector] = useState(true);
 
   const currentDomain = domains[currentDomainIndex];
   const currentQuestion = currentDomain?.questions[currentQuestionIndex];
@@ -323,13 +324,7 @@ export default function Home() {
   };
 
   const handleNextDomain = () => {
-    if (currentDomainIndex < domains.length - 1) {
-      setCurrentDomainIndex(currentDomainIndex + 1);
-      setCurrentQuestionIndex(0);
-      setCurrentlyViewingDomain(null);
-    } else {
-      setAssessmentCompleted(true);
-    }
+    setShowDomainSelector(true);
   };
 
   const resetAssessment = () => {
@@ -341,6 +336,61 @@ export default function Home() {
     setUserInput("");
     setAssessmentCompleted(false);
     setCurrentlyViewingDomain(null);
+    setShowDomainSelector(true);
+  };
+
+  const selectDomain = (domainIndex: number) => {
+    setCurrentDomainIndex(domainIndex);
+    setCurrentQuestionIndex(0);
+    setCurrentlyViewingDomain(null);
+    setShowDomainSelector(false);
+  };
+
+  // Domain Selector component
+  const DomainSelector = () => {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Social Needs Assessment</h1>
+        <p className="text-gray-600 mb-6 text-center">Please select a domain to assess:</p>
+        
+        <div className="grid gap-4">
+          {domains.map((domain, index) => (
+            <button
+              key={domain.id}
+              onClick={() => selectDomain(index)}
+              className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
+            >
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-blue-700">{domain.name}</span>
+                {domainFlags[domain.id] && domainFlags[domain.id].length > 0 ? (
+                  <span className="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                    {domainFlags[domain.id].length} concerns identified
+                  </span>
+                ) : domainAnswers[domain.id] && domainAnswers[domain.id].length > 0 ? (
+                  <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                    Completed
+                  </span>
+                ) : (
+                  <span className="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                    Not started
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{domain.questions.length} questions</p>
+            </button>
+          ))}
+        </div>
+        
+        {Object.keys(domainFlags).length > 0 && (
+          <button
+            onClick={() => setAssessmentCompleted(true)}
+            className="w-full mt-6 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            View Complete Assessment Summary
+          </button>
+        )}
+      </div>
+    );
   };
 
   // Domain result component to show results for a specific domain
@@ -353,32 +403,44 @@ export default function Home() {
     if (!domain) return null;
     
     return (
-      <div className="bg-red-100 p-4 rounded-lg mt-4">
-        <h2 className="text-xl font-bold mb-4 text-blue-600">{domain.name} Results</h2>
-        <h3 className="font-semibold mb-2 text-blue-600">Identified Concerns:</h3>
-        {flags.length > 0 ? (
-          <ul className="list-disc pl-5 mb-4">
-            {analysisResults.map((result, index) => (
-              <li key={index} className="mb-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-medium text-blue-600">{result.flag}</div>
-                  <div className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
-                    {result.confidencePercentage}% confidence
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="mb-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-blue-600">{domain.name} Results</h2>
+          <button 
+            onClick={() => setShowDomainSelector(true)}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Back to domains
+          </button>
+        </div>
+        
+        <div className="bg-red-100 p-4 rounded-lg mb-4">
+          <h3 className="font-semibold mb-2 text-blue-600">Identified Concerns:</h3>
+          {flags.length > 0 ? (
+            <ul className="list-disc pl-5 mb-4">
+              {analysisResults.map((result, index) => (
+                <li key={index} className="mb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-blue-600">{result.flag}</div>
+                    <div className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
+                      {result.confidencePercentage}% confidence
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-blue-600 h-2.5 rounded-full" 
-                    style={{ width: `${result.confidencePercentage}%` }}
-                  ></div>
-                </div>
-                <div className="text-sm text-gray-600 mt-2">{result.reasoning}</div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mb-4 text-black">No immediate concerns identified in this domain.</p>
-        )}
+                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ width: `${result.confidencePercentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-2">{result.reasoning}</div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-4 text-black">No immediate concerns identified in this domain.</p>
+          )}
+        </div>
+        
         <h3 className="font-semibold text-blue-600 mb-2">Your Responses:</h3>
         <ul className="mb-4">
           {domain.questions.map((question, index) => (
@@ -390,21 +452,27 @@ export default function Home() {
             </li>
           ))}
         </ul>
-        {currentDomainIndex < domains.length - 1 ? (
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              setCurrentDomainIndex(domains.findIndex(d => d.id === domainId));
+              setCurrentQuestionIndex(0);
+              setUserInput("");
+              setCurrentlyViewingDomain(null);
+              setShowDomainSelector(false);
+            }}
+            className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Retake Assessment
+          </button>
           <button
             onClick={handleNextDomain}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Continue to Next Domain
+            Return to Domain Selection
           </button>
-        ) : (
-          <button
-            onClick={() => setAssessmentCompleted(true)}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Complete Assessment
-          </button>
-        )}
+        </div>
       </div>
     );
   };
@@ -413,39 +481,74 @@ export default function Home() {
   const AssessmentSummary = () => {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Complete Assessment Summary</h1>
+        <div className="mb-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-blue-600">Complete Assessment Summary</h1>
+          <button 
+            onClick={() => setShowDomainSelector(true)}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Back to domains
+          </button>
+        </div>
+        
         {domains.map(domain => {
           const flags = domainFlags[domain.id] || [];
           const analysisResults = domainAnalysisResults[domain.id] || [];
           
           return (
             <div key={domain.id} className="mb-8 bg-red-100 p-4 rounded-lg">
-              <h2 className="text-xl font-bold mb-2 text-blue-600">{domain.name}</h2>
-              {flags.length > 0 ? (
-                <>
-                  <h3 className="font-semibold text-blue-600 mb-2">Identified Concerns:</h3>
-                  <ul className="list-disc pl-5 mb-4">
-                    {analysisResults.map((result, index) => (
-                      <li key={index} className="mb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium text-blue-600">{result.flag}</div>
-                          <div className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
-                            {result.confidencePercentage}% confidence
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold text-blue-600">{domain.name}</h2>
+                {domainAnswers[domain.id] && domainAnswers[domain.id].length > 0 ? (
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Completed</span>
+                ) : (
+                  <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">Not assessed</span>
+                )}
+              </div>
+              
+              {domainAnswers[domain.id] && domainAnswers[domain.id].length > 0 ? (
+                flags.length > 0 ? (
+                  <>
+                    <h3 className="font-semibold text-blue-600 mb-2">Identified Concerns:</h3>
+                    <ul className="list-disc pl-5 mb-4">
+                      {analysisResults.map((result, index) => (
+                        <li key={index} className="mb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium text-blue-600">{result.flag}</div>
+                            <div className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
+                              {result.confidencePercentage}% confidence
+                            </div>
                           </div>
-                        </div>
-                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${result.confidencePercentage}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-sm text-gray-600 mt-2">{result.reasoning}</div>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                          <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                            <div 
+                              className="bg-blue-600 h-2.5 rounded-full" 
+                              style={{ width: `${result.confidencePercentage}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-2">{result.reasoning}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mb-4 text-black">No concerns identified in this domain.</p>
+                )
               ) : (
-                <p className="mb-4 text-black">No concerns identified in this domain.</p>
+                <p className="text-gray-500 italic">This domain has not been assessed yet.</p>
+              )}
+              
+              {domainAnswers[domain.id] && domainAnswers[domain.id].length === 0 && (
+                <button
+                  onClick={() => {
+                    setCurrentDomainIndex(domains.findIndex(d => d.id === domain.id));
+                    setCurrentQuestionIndex(0);
+                    setShowDomainSelector(false);
+                    setAssessmentCompleted(false);
+                  }}
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                >
+                  Take this assessment
+                </button>
               )}
             </div>
           );
@@ -465,15 +568,20 @@ export default function Home() {
       <div className="max-w-md w-full mx-auto">
         {assessmentCompleted ? (
           <AssessmentSummary />
+        ) : showDomainSelector ? (
+          <DomainSelector />
         ) : currentlyViewingDomain !== null ? (
           <DomainResult domainId={currentlyViewingDomain} />
         ) : (
           <div className="p-6 bg-white rounded-lg shadow-md">
             <div className="mb-4 flex justify-between items-center">
               <h1 className="text-2xl font-bold text-blue-600">{currentDomain.name}</h1>
-              <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                Domain {currentDomainIndex + 1}/{domains.length}
-              </span>
+              <button 
+                onClick={() => setShowDomainSelector(true)}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Back to domains
+              </button>
             </div>
             
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
