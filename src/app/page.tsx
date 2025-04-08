@@ -1,7 +1,9 @@
 "use client"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import OpenAI from "openai";
-
+import { createUserContext } from "@/utils/user-context";
+import { createRagService } from "@/utils/rag-service";
+import Link from "next/link";
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
@@ -208,7 +210,76 @@ export default function Home() {
 
   const currentDomain = domains[currentDomainIndex];
   const currentQuestion = currentDomain?.questions[currentQuestionIndex];
+
+  // useEffect(() => {
+  //   const chunks = processSystemPrompts();
+  //   displayChunks(chunks);
+  // }, [])
+
+  // useEffect(() => {
+  //   async function testVectorStore() {
+  //     // Initialize the vector store
+  //     await initializeVectorStore();
+      
+  //     // Test a search query
+  //     const results = await findSimilarChunks("What are the early signs of pregnancy?");
+  //     console.log("Search results:", results);
+  //   }
+    
+  //   testVectorStore();
+  // }, []);
   
+  useEffect(() => {
+    async function testRagService() {
+      try {
+        // Create user context with sample answers
+        const userContext = createUserContext([
+          {
+            domainName: "Housing & Basic Needs",
+            questionText: "What is your current housing situation?",
+            answer: "I'm staying with friends temporarily",
+            flag: "Housing instability / temporary housing"
+          },
+          {
+            domainName: "Personal Safety & Demographics",
+            questionText: "What race or ethnicity do you identify with?",
+            answer: "Hispanic",
+            flag: "Demographics"
+          }
+        ]);
+        
+        // Create RAG service
+        const ragService = createRagService(userContext);
+        
+        // Test with a health question (should emphasize knowledge base)
+        console.log("\nTesting health question:");
+        const healthResponse = await ragService.generateResponse(
+          "What foods should I eat during the first trimester of pregnancy?"
+        );
+        console.log(healthResponse);
+        
+        // Test with a social question (should emphasize user context)
+        console.log("\nTesting social question:");
+        const socialResponse = await ragService.generateResponse(
+          "Can you recommend resources for my housing situation?"
+        );
+        console.log(socialResponse);
+        
+        // Test with a mixed question (should use both sources)
+        console.log("\nTesting mixed question:");
+        const mixedResponse = await ragService.generateResponse(
+          "How does housing instability affect pregnancy?"
+        );
+        console.log(mixedResponse);
+      } catch (error) {
+        console.error("Error testing RAG service:", error);
+      }
+    }
+    
+    testRagService();
+  }, []);
+
+
   const analyzeWithAI = async (question: string, answer: string, possibleFlag: string) => {
     try {
       const prompt = `
@@ -473,6 +544,22 @@ export default function Home() {
             Return to Domain Selection
           </button>
         </div>
+        <div className="mt-4">
+          <Link
+            href="/chat"
+            onClick={() => {
+              // Save all assessment data to localStorage before navigating
+              localStorage.setItem("domainAnswers", JSON.stringify(domainAnswers));
+              localStorage.setItem("domainFlags", JSON.stringify(domainFlags));
+            }}
+            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            Chat with Health Assistant
+          </Link>
+        </div>
       </div>
     );
   };
@@ -553,6 +640,20 @@ export default function Home() {
             </div>
           );
         })}
+        <Link
+          href="/chat"
+          onClick={() => {
+            // Save all assessment data to localStorage before navigating
+            localStorage.setItem("domainAnswers", JSON.stringify(domainAnswers));
+            localStorage.setItem("domainFlags", JSON.stringify(domainFlags));
+          }}
+          className="w-full block text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors mb-4 flex items-center justify-center"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          Chat with Health Assistant
+        </Link>
         <button
           onClick={resetAssessment}
           className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"

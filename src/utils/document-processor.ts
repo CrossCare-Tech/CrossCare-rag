@@ -1,0 +1,104 @@
+import { systemPrompts } from "../app/constants/systemPrompts";
+
+// Define TypeScript interfaces for our data
+export interface TextChunk {
+  id: string;
+  text: string;
+  metadata?: {
+    section?: string;
+    type?: string;
+    question?: string;
+    index?: number;
+    [key: string]: string | number | undefined;
+  };
+}
+
+/**
+ * Processes the system prompts text into smaller, searchable chunks
+ * @returns An array of text chunks with metadata
+ */
+export function processSystemPrompts(): TextChunk[] {
+  console.log("Processing system prompts into chunks...");
+  
+  // 1. Split the text by sections (using numbered headings as delimiters)
+  const sectionDelimiter = /\d+\.\s+[A-Za-z\s&]+\n/g;
+  const sectionMatches = [...systemPrompts.matchAll(sectionDelimiter)];
+  const sectionTitles = sectionMatches.map(match => match[0].trim());
+  
+  // 2. Get the start indices of each section
+  const sectionIndices = sectionMatches.map(match => match.index);
+  
+  // 3. Extract each section's content
+  const chunks: TextChunk[] = [];
+  let chunkIdCounter = 0;
+  
+  // Process each section
+  for (let i = 0; i < sectionTitles.length; i++) {
+    const sectionTitle = sectionTitles[i];
+    const startIndex = sectionIndices[i];
+    const endIndex = (i < sectionTitles.length - 1) ? sectionIndices[i + 1] : systemPrompts.length;
+    
+    if (startIndex === undefined) continue;
+    
+    const sectionContent = systemPrompts.substring(startIndex! + sectionTitle.length, endIndex).trim();
+    
+    // Check if section contains Q&A format
+    if (sectionContent.includes("Q:") && sectionContent.includes("A:")) {
+      // Process as Q&A pairs
+      const qaPattern = /Q:([^Q]+?)A:([^Q]+?)(?=Q:|$)/gs;
+      let qaMatch;
+      let qaIndex = 0;
+      
+      while ((qaMatch = qaPattern.exec(sectionContent)) !== null) {
+        const question = qaMatch[1].trim();
+        const answer = qaMatch[2].trim();
+        
+        chunks.push({
+          id: `chunk_${chunkIdCounter++}`,
+          text: `Question: ${question}\nAnswer: ${answer}`,
+          metadata: {
+            section: sectionTitle,
+            type: "qa",
+            question: question,
+            index: qaIndex++
+          }
+        });
+      }
+    } else {
+      // Split section by paragraphs or sub-sections
+      const paragraphs = sectionContent.split(/\n\n+/);
+      
+      paragraphs.forEach((paragraph, paragraphIndex) => {
+        if (paragraph.trim().length > 0) {
+          chunks.push({
+            id: `chunk_${chunkIdCounter++}`,
+            text: paragraph.trim(),
+            metadata: {
+              section: sectionTitle,
+              type: "paragraph",
+              index: paragraphIndex
+            }
+          });
+        }
+      });
+    }
+  }
+  
+  console.log(`Created ${chunks.length} chunks from system prompts`);
+  return chunks;
+}
+
+/**
+ * Utility function to help us debug the chunks during development
+ * @param chunks The array of text chunks to display
+ */
+export function displayChunks(chunks: TextChunk[]) {
+  console.log("\n=== CHUNKS PREVIEW ===");
+  chunks.slice(0, 3).forEach((chunk, i) => {
+    console.log(`\nChunk ${i + 1} (${chunk.id}):`);
+    console.log(`Section: ${chunk.metadata?.section}`);
+    console.log(`Type: ${chunk.metadata?.type}`);
+    console.log("First 100 chars: " + chunk.text.substring(0, 100) + "...");
+  });
+  console.log(`\n... and ${chunks.length - 3} more chunks\n`);
+}
