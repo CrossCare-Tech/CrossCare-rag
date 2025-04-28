@@ -38,6 +38,21 @@ export function createRagService(userContext: UserContext) {
     try {
       // 1. Retrieve relevant documents from the knowledge base
       const relevantDocs = await findSimilarChunks(query, 3);
+
+      // Log source of retrieved docs
+      console.log("\n----- SOURCE TRACKING -----");
+      console.log(`Query: "${query}"`);
+      console.log("Retrieved chunks:");
+      relevantDocs.forEach((doc, index) => {
+        console.log(`[${index + 1}] ID: ${doc.id}`);
+        console.log(`    Type: ${doc.metadata?.type || 'unknown'}`);
+        console.log(`    Source: ${doc.metadata?.source || 'unknown'}`);
+        console.log(`    Section: ${doc.metadata?.section || 'unknown'}`);
+        console.log(`    Score: ${doc.score}`);
+        console.log(`    Text (first 70 chars): ${doc.text.substring(0, 70)}...`);
+      });
+      console.log("---------------------------\n");
+      
       
       // 2. Format the retrieved knowledge
       const knowledgeContext = formatKnowledgeContext(relevantDocs);
@@ -57,7 +72,7 @@ export function createRagService(userContext: UserContext) {
           { role: "user", content: query }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 700
       });
       
       return response.choices[0].message.content || "I'm sorry, I couldn't generate a response.";
@@ -151,15 +166,16 @@ ${relevantUserContext}
 
     prompt += `
 YOUR TASK:
-1. Provide a helpful, accurate response to the user's question: "${query}"
-2. Base your response on the provided knowledge and user context
-3. If addressing a health concern, include relevant guidance from the knowledge base
-4. If addressing a social need, consider the user's specific situation from their assessment
-5. Be empathetic and supportive, especially regarding any identified concerns
-6. If you don't have enough information, acknowledge limitations and provide general guidance
-7. Format your response in a clear, organized way with appropriate paragraphs
+1. Provide a concise, helpful response to the user's question: "${query}"
+2. Keep your answer brief and direct - aim for 3-5 sentences when possible
+3. Base your response on the provided knowledge and user context
+4. If addressing a health concern, include relevant guidance from the knowledge base
+5. If addressing a social need, consider the user's specific situation from their assessment
+6. Be empathetic and supportive, especially regarding any identified concerns
+7. If you don't have enough information, acknowledge limitations and provide general guidance
+8. Format your response in a clear, organized way with appropriate paragraphs
 
-Remember, this person may be dealing with significant health and social challenges. Your response should be both informative and compassionate.
+Remember, the user prefers short, to-the-point answers that address their specific question.
 `;
 
     return prompt;
@@ -178,6 +194,20 @@ Remember, this person may be dealing with significant health and social challeng
     try {
       // 1. Retrieve relevant documents from the knowledge base
       const relevantDocs = await findSimilarChunks(query, 3);
+
+       // Add source tracking here too
+    console.log("\n----- SOURCE TRACKING -----");
+    console.log(`Query: "${query}"`);
+    console.log("Retrieved chunks:");
+    relevantDocs.forEach((doc, index) => {
+      console.log(`[${index + 1}] ID: ${doc.id}`);
+      console.log(`    Type: ${doc.metadata?.type || 'unknown'}`);
+      console.log(`    Source: ${doc.metadata?.source || 'unknown'}`);
+      console.log(`    Section: ${doc.metadata?.section || 'unknown'}`);
+      console.log(`    Score: ${doc.score}`);
+      console.log(`    Text (first 70 chars): ${doc.text.substring(0, 70)}...`);
+    });
+    console.log("---------------------------\n");
       
       // 2. Format the retrieved knowledge
       const knowledgeContext = formatKnowledgeContext(relevantDocs);
@@ -206,7 +236,7 @@ Remember, this person may be dealing with significant health and social challeng
         model: "gpt-3.5-turbo",
         messages: openaiMessages,
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 700
       });
       
       return response.choices[0].message.content || "I'm sorry, I couldn't generate a response.";

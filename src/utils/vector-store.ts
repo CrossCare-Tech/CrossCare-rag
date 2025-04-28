@@ -61,3 +61,31 @@ export async function findSimilarChunks(
     throw error;
   }
 }
+
+/**
+ * Forces reindexing of the vector store including all content
+ * This will rebuild the index with both system prompts and scraped content
+ */
+export async function forceReindexVectorStore(): Promise<void> {
+  try {
+    const response = await fetch('/api/vector-store', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ forceReindex: true }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log(data.message);
+    
+    return data;
+  } catch (error) {
+    console.error('Error reindexing vector store:', error);
+    throw error;
+  }
+}

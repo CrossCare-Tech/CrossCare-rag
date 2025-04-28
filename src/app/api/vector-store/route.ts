@@ -3,6 +3,8 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
 import { processSystemPrompts } from '@/utils/document-processor';
+import { processScrapedDocuments } from '@/utils/document-processor';
+import { scrapedContent } from '@/app/constants/scraped-content';
 
 // Get environment variables (server-side)
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY || '';
@@ -37,10 +39,19 @@ export async function POST(request: NextRequest) {
       console.log('Populating vector store with chunks...');
       
       // Get chunks from the knowledge base
-      const chunks = processSystemPrompts();
+      const systemChunks = processSystemPrompts();
+      console.log(`Created ${systemChunks.length} chunks from system prompts`);
+      
+      // Get chunks from scraped content - IMPORTANT!
+      const scrapedChunks = processScrapedDocuments(scrapedContent);
+      console.log(`Created ${scrapedChunks.length} chunks from scraped content`);
+      
+      // Combine all chunks
+      const allChunks = [...systemChunks, ...scrapedChunks];
+      console.log(`Total chunks to process: ${allChunks.length}`);
       
       // Extract texts for embedding creation
-      const texts = chunks.map(chunk => chunk.text);
+      const texts = allChunks.map(chunk => chunk.text);
       
       // Create embeddings in batches
       const batchSize = 25;
@@ -49,6 +60,7 @@ export async function POST(request: NextRequest) {
       // Process in batches to avoid rate limits
       for (let i = 0; i < texts.length; i += batchSize) {
         const batch = texts.slice(i, i + batchSize);
+        console.log(`Creating embeddings for batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(texts.length/batchSize)}`);
         
         const response = await openai.embeddings.create({
           model: EMBEDDING_MODEL,
@@ -66,7 +78,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Prepare vectors for Pinecone
-      const vectors = chunks.map((chunk, i) => ({
+      const vectors = allChunks.map((chunk, i) => ({
         id: chunk.id,
         values: embeddings[i],
         metadata: {
@@ -75,17 +87,21 @@ export async function POST(request: NextRequest) {
         }
       }));
       
+      // Clear existing vectors first (optional)
+      // await index.deleteAll();
+      
       // Store vectors in batches
       const upsertBatchSize = 100;
       
       for (let i = 0; i < vectors.length; i += upsertBatchSize) {
         const batch = vectors.slice(i, i + upsertBatchSize);
+        console.log(`Upserting batch ${Math.floor(i/upsertBatchSize) + 1} of ${Math.ceil(vectors.length/upsertBatchSize)}`);
         await index.upsert(batch);
       }
       
       return NextResponse.json({ 
         success: true, 
-        message: `Successfully stored ${chunks.length} chunks in Pinecone`
+        message: `Successfully stored ${allChunks.length} chunks in Pinecone (${systemChunks.length} system, ${scrapedChunks.length} scraped)`
       });
     } else {
       return NextResponse.json({ 

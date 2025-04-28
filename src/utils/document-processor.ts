@@ -89,6 +89,76 @@ export function processSystemPrompts(): TextChunk[] {
 }
 
 /**
+ * Processes scraped content into searchable chunks
+ * @param scrapedDocuments Array of scraped documents with title and paragraphs
+ * @returns An array of text chunks with metadata
+ */
+export function processScrapedDocuments(scrapedDocuments: Array<{
+  title: string;
+  paragraphs: string[];
+  source?: string;
+}>): TextChunk[] {
+  console.log(`Processing ${scrapedDocuments.length} scraped documents into chunks...`);
+  
+  const chunks: TextChunk[] = [];
+  let chunkIdCounter = 1000; // Start IDs at 1000 to differentiate from system prompts
+  
+  // Process each scraped document
+  scrapedDocuments.forEach((document, docIndex) => {
+    // Create a source identifier based on title or provided source
+    const source = document.source || document.title.replace(/\s+/g, '_').substring(0, 30);
+    
+    // Combine related paragraphs to create meaningful chunks
+    let currentText = '';
+    let paragraphIndex = 0;
+    
+    for (const paragraph of document.paragraphs) {
+      // Skip very short paragraphs or navigation elements
+      if (paragraph.trim().length < 5) continue;
+      
+      // If adding this paragraph would make the chunk too large, save current chunk and start a new one
+      if (currentText.length + paragraph.length > 1000 && currentText.length > 0) {
+        chunks.push({
+          id: `scraped_${docIndex}_${chunkIdCounter++}`,
+          text: currentText.trim(),
+          metadata: {
+            title: document.title,
+            source: source,
+            type: "scraped_content",
+            section: document.title,
+            index: paragraphIndex++
+          }
+        });
+        
+        currentText = '';
+      }
+      
+      // Add paragraph to current chunk
+      currentText += paragraph + '\n\n';
+    }
+    
+    // Add the final chunk if there's text remaining
+    if (currentText.trim().length > 0) {
+      chunks.push({
+        id: `scraped_${docIndex}_${chunkIdCounter++}`,
+        text: currentText.trim(),
+        metadata: {
+          title: document.title,
+          source: source,
+          type: "scraped_content",
+          section: document.title,
+          index: paragraphIndex
+        }
+      });
+    }
+  });
+  
+  console.log(`Created ${chunks.length} chunks from ${scrapedDocuments.length} scraped documents`);
+  return chunks;
+}
+
+/**
+ * 
  * Utility function to help us debug the chunks during development
  * @param chunks The array of text chunks to display
  */

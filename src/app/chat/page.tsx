@@ -4,9 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { createUserContext, UserAnswer } from "@/utils/user-context";
 import { createRagService } from "@/utils/rag-service";
-import { initializeVectorStore } from "@/utils/vector-store";
+import { forceReindexVectorStore, initializeVectorStore } from "@/utils/vector-store";
 import { domains } from "@/app/constants/domain"; // Create this file or import from wherever your domains are defined
-import Image from 'next/image';
 
 // Define message interface
 interface Message {
@@ -108,6 +107,17 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Handle reindexing the vector store
+  useEffect(() => {
+    async function updateVectorStore() {
+      await forceReindexVectorStore();
+      console.log("Vector store updated with scraped content!");
+    }
+    
+    // Uncomment the line below when you want to update the vector store
+    // updateVectorStore();
+  }, []);
 
   // Handle sending a message
   const handleSendMessage = async (message = inputMessage) => {
