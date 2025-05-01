@@ -1,0 +1,22 @@
+# render.yaml
+services:
+  - type: web
+    name: crosscare-rag-api
+    runtime: node
+    plan: free
+    buildCommand: npm install; npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_OPENAI_API_KEY
+        sync: false # This means you'll set this manually in the Render dashboard
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX
+        sync: false
+      - key: PINECONE_ENVIRONMENT
+        sync: false
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+    autoDeploy: true # Set to false if you want manual deployments
