@@ -86,10 +86,10 @@ async function fetchUserDataWithCache(userId: string): Promise<UserAnswer[]> {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = await params.userId
+    const userId = (await params).userId
     const { query, conversationHistory } = await request.json();
     
     if (!userId) {
