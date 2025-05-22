@@ -17,6 +17,13 @@ const pinecone = new Pinecone({
   apiKey: PINECONE_API_KEY,
 });
 
+export const config = {
+  api: {
+    bodyParser: false,
+    externalResolver: true,
+  },
+};
+
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
@@ -84,13 +91,38 @@ async function fetchUserDataWithCache(userId: string): Promise<UserAnswer[]> {
   return userAnswers;
 }
 
+async function translateToLanguage(text: string, languageCode: string): Promise<string> {
+  const languageMap: Record<string, string> = {
+    en: "English",
+    es: "Spanish",
+    hi: "Hindi",
+    ht: "Haitian Creole",
+    pt: "Portuguese"
+  };
+  
+  const targetLanguage = languageMap[languageCode] || "English";
+  if (targetLanguage === "English") return text;
+
+  const translationResult = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [
+      { role: "system", content: `Translate the following text to ${targetLanguage}. Preserve all formatting, section titles, and bullet points.` },
+      { role: "user", content: text }
+    ],
+    max_tokens: 1000
+  });
+
+  return translationResult.choices[0].message.content ?? text;
+}
+
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const userId = (await params).userId
-    const { query, conversationHistory } = await request.json();
+    const { query, conversationHistory, currentLanguage } = await request.json();
     
     if (!userId) {
       return NextResponse.json({ 
@@ -190,8 +222,13 @@ export async function POST(
       max_tokens: 500 // Shorter responses for mobile
     });
     
-    const responseContent = completion.choices[0].message.content || 
+    let responseContent = completion.choices[0].message.content || 
       "I'm sorry, I couldn't generate a response.";
+
+      if (currentLanguage && currentLanguage !== "en") {
+        responseContent = await translateToLanguage(responseContent, currentLanguage);
+      }
+      
     
     console.log(`Generated response (${responseContent.length} chars)`);
     
@@ -243,6 +280,8 @@ function formatKnowledgeContext(docs: any[]): string {
   
   return formattedDocs;
 }
+
+
 
 // Create an augmented prompt combining knowledge and user context
 function createAugmentedPrompt(
