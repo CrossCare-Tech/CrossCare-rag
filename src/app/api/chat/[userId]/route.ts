@@ -91,6 +91,7 @@ async function fetchUserDataWithCache(userId: string): Promise<UserAnswer[]> {
   return userAnswers;
 }
 
+
 async function translateToLanguage(text: string, languageCode: string): Promise<string> {
   const languageMap: Record<string, string> = {
     en: "English",
