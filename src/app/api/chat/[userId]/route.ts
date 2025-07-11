@@ -10,7 +10,7 @@ const PINECONE_API_KEY = process.env.PINECONE_API_KEY || '';
 const PINECONE_INDEX = process.env.PINECONE_INDEX || '';
 const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
-const EXTERNAL_BACKEND_URL = 'https://crosscare-backends.onrender.com/api';
+const EXTERNAL_BACKEND_URL = 'https://crosscare-rag-75bo.onrender.com/api';
 
 // Initialize clients
 const pinecone = new Pinecone({
@@ -165,18 +165,18 @@ export async function POST(
     const relevantDocs = await findSimilarChunksServer(query, 3, index, openai, EMBEDDING_MODEL);
     
     // Log source of retrieved docs for debugging
-    console.log("\n----- SOURCE TRACKING -----");
-    console.log(`Query: "${query}"`);
-    console.log("Retrieved chunks:");
-    relevantDocs.forEach((doc, index) => {
-      console.log(`[${index + 1}] ID: ${doc.id}`);
-      console.log(`    Type: ${doc.metadata?.type || 'unknown'}`);
-      console.log(`    Source: ${doc.metadata?.source || 'unknown'}`);
-      console.log(`    Section: ${doc.metadata?.section || 'unknown'}`);
-      console.log(`    Score: ${doc.score}`);
-      console.log(`    Text (first 70 chars): ${doc.text.substring(0, 70)}...`);
-    });
-    console.log("---------------------------\n");
+    // console.log("\n----- SOURCE TRACKING -----");
+    // console.log(`Query: "${query}"`);
+    // console.log("Retrieved chunks:");
+    // relevantDocs.forEach((doc, index) => {
+    //   console.log(`[${index + 1}] ID: ${doc.id}`);
+    //   console.log(`    Type: ${doc.metadata?.type || 'unknown'}`);
+    //   console.log(`    Source: ${doc.metadata?.source || 'unknown'}`);
+    //   console.log(`    Section: ${doc.metadata?.section || 'unknown'}`);
+    //   console.log(`    Score: ${doc.score}`);
+    //   console.log(`    Text (first 70 chars): ${doc.text.substring(0, 70)}...`);
+    // });
+    // console.log("---------------------------\n");
     
     // Step 6: Format the retrieved knowledge
     const knowledgeContext = formatKnowledgeContext(relevantDocs);
