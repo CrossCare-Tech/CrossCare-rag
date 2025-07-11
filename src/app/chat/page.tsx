@@ -116,7 +116,7 @@ export default function ChatPage() {
     }
     
     // Uncomment the line below when you want to update the vector store
-     updateVectorStore();
+    // updateVectorStore();
   }, []);
 
   // Handle sending a message
