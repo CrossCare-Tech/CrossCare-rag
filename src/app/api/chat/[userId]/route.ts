@@ -10,7 +10,7 @@ const PINECONE_API_KEY = process.env.PINECONE_API_KEY || '';
 const PINECONE_INDEX = process.env.PINECONE_INDEX || '';
 const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
-const EXTERNAL_BACKEND_URL = 'https://crosscare-rag-75bo.onrender.com/api';
+const EXTERNAL_BACKEND_URL = process.env.EXTERNAL_BACKEND_URL || 'https://crosscare-backend.onrender.com/api';
 
 // Initialize clients
 const pinecone = new Pinecone({

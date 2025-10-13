@@ -21,4 +21,6 @@ services:
         sync: false
       - key: OPENAI_EMBEDDING_MODEL
         value: text-embedding-3-small
+      - key: EXTERNAL_BACKEND_URL
+        value: https://crosscare-backend.onrender.com/api
     autoDeploy: true # Set to false if you want manual deployments
